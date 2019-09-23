@@ -82,11 +82,14 @@ module SplunkTracing
       # @return [Net::HTTP::Post]
       #
       def build_request(report)
+        gzip = Zlib::GzipWriter.new(StringIO.new)
+        gzip << report.to_json
         req = Net::HTTP::Post.new(REPORTS_API_ENDPOINT)
         req[HEADER_ACCESS_TOKEN] = 'Splunk ' + @access_token
-#        req['Content-Type'] = 'application/json'
+        req['Content-Type'] = 'application/json'
+        req['Content-Encoding'] = 'gzip'
         req['Connection'] = 'keep-alive'
-        req.body = report.to_json
+        req.body = gzip.close.string
         req
       end
 
