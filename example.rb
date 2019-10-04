@@ -4,7 +4,7 @@ SimpleCov.command_name 'example.rb'
 SimpleCov.start
 require 'splunktracing'
 
-access_token = '{your_access_token}'
+access_token = '08243c00-a31b-499d-9fae-776b41990997'
 
 SplunkTracing.configure(component_name: 'splunktracing/ruby/example', access_token: access_token)
 
@@ -31,4 +31,3 @@ end
 span.finish
 SplunkTracing.flush
 puts 'Done!'
-puts "https://app.splunktracing.com/#{access_token}/trace?span_guid=#{span.span_context.id}&at_micros=#{span.start_micros}"

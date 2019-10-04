@@ -1,3 +1,5 @@
+require 'socket'
+
 require 'splunktracing/version'
 
 module SplunkTracing
@@ -19,13 +21,13 @@ module SplunkTracing
 
       @runtime = {
         guid: guid,
+        device:  Socket.gethostname,
         start_micros: start_time,
-        group_name: component_name,
-        attrs: [
-          {Key: "tracer_platform",         Value: "ruby"},
-          {Key: "tracer_version",          Value: SplunkTracing::VERSION},
-          {Key: "tracer_platform_version", Value: RUBY_VERSION}
-        ] + tags.map{|k,v| {Key: k.to_s, Value: v.to_s}}
+        component_name: component_name,
+        tracer_platform: "ruby",
+        tracer_version: SplunkTracing::VERSION,
+        tracer_platform_version: RUBY_VERSION,
+        attrs: tags
       }.freeze
 
       reset_on_fork

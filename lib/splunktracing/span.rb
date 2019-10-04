@@ -130,9 +130,7 @@ module SplunkTracing
       fields = {} if fields.nil?
       record = {
         timestamp_micros: SplunkTracing.micros(timestamp),
-        fields: fields.to_a.map do |key, value|
-          { Key: key.to_s, Value: value.to_s }
-        end
+        fields: fields,
       }
 
       log_records.push(record)
@@ -154,15 +152,18 @@ module SplunkTracing
 
     # Hash representation of a span
     def to_h
+      if end_micros.nil?
+        self.end_micros = SplunkTracing.micros(Time.now)
+      end
       {
-        runtime_guid: tracer.guid,
-        span_guid: context.id,
-        trace_guid: context.trace_id,
-        parent_span_guid: context.parent_id,
-        span_name: operation_name,
+        guid: tracer.guid,
+        span_id: context.id,
+        trace_id: context.trace_id,
+        parent_span_id: context.parent_id,
+        operation_name: operation_name,
         tags: tags,
-        timestamp: start_micros,
-        duration_micros: end_micros,
+        timestamp: start_micros/1000000.0,
+        duration: end_micros-start_micros,
         error_flag: false,
         dropped_logs: dropped_logs_count,
         log_records: log_records,

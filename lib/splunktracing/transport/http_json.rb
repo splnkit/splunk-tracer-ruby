@@ -14,7 +14,7 @@ module SplunkTracing
       ENCRYPTION_TLS = 'tls'.freeze
       ENCRYPTION_NONE = 'none'.freeze
 
-      REPORTS_API_ENDPOINT = '/services/collector/raw'.freeze
+      REPORTS_API_ENDPOINT = '/services/collector'.freeze
       HEADER_ACCESS_TOKEN = 'Authorization'.freeze
 
       ##
@@ -78,12 +78,12 @@ module SplunkTracing
       private
 
       ##
-      # @param [Hash] report
+      # @param [String] report_string
       # @return [Net::HTTP::Post]
       #
       def build_request(report)
         gzip = Zlib::GzipWriter.new(StringIO.new)
-        gzip << report.to_json
+        gzip << convert_report_data(report)
         req = Net::HTTP::Post.new(REPORTS_API_ENDPOINT)
         req[HEADER_ACCESS_TOKEN] = 'Splunk ' + @access_token
         req['Content-Type'] = 'application/json'
@@ -92,6 +92,40 @@ module SplunkTracing
         req.body = gzip.close.string
         req
       end
+
+      ##
+      # @param [Hash] report
+      # @return [String] report_string
+      #
+      def convert_report_data(report)
+        report_obj_array = Array.new
+        runtime_hash = report[:runtime]
+
+        if report[:span_records].any?
+          report[:span_records].each do |span|
+            span_hash = {:time => span[:timestamp], :sourcetype => "splunktracing:span" }
+            span_contents = span.merge(runtime_hash)
+            log_array = span_contents.delete(:log_records)
+            file = File.open("/Users/gburgett/Downloads/woah.txt", "w")
+            file.puts log_array.to_json
+            file.close
+            runtime_attrs = span_contents.delete(:attrs)
+            span_contents[:tags].merge(runtime_attrs)
+            span_hash["event"] = span_contents
+            report_obj_array.push(span_hash.to_json)
+            if log_array && log_array.any?
+              span_contents.delete(:timestamp)
+              span_contents.delete(:duration)
+              log_array.each do |log|
+                log_hash = {:time => log[:timestamp_micros]/1000000.0, :sourcetype => "splunktracing:log" , :event => log.merge(span_contents)}
+                report_obj_array.push(log_hash.to_json)
+              end
+            end
+          end
+        end
+        report_string = report_obj_array.join("\n")
+        report_string
+      end      
 
       ##
       # @return [Net::HTTP]
