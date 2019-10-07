@@ -58,17 +58,17 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 
 
-This library is the Splunk binding for [OpenTracing](http://opentracing.io/). See the [OpenTracing Python API](https://github.com/opentracing/opentracing-python) for additional detail.
+This library is the Splunk binding for [OpenTracing](http://opentracing.io/). See the [OpenTracing Ruby API](https://github.com/opentracing/opentracing-ruby) for additional detail.
 
 ## License
 
-The Splunk Tracer for Python is licensed under the MIT License. Details can be found in the LICENSE file.
+The Splunk Tracer for Ruby is licensed under the MIT License. Details can be found in the LICENSE file.
 
 ### Third-party libraries
 
-This is a fork of the Python tracer from Lightstep, which is also licensed under the MIT License. Links to the original repository and license are below:
+This is a fork of the Ruby tracer from Lightstep, which is also licensed under the MIT License. Links to the original repository and license are below:
 
-* [lightstep-tracer-python][lightstep]: [MIT][lightstep-license]
+* [lightstep-tracer-ruby][lightstep]: [MIT][lightstep-license]
 
-[lightstep]:                      https://github.com/lightstep/lightstep-tracer-python
-[lightstep-license]:              https://github.com/lightstep/lightstep-tracer-python/blob/master/LICENSE
+[lightstep]:                      https://github.com/lightstep/lightstep-tracer-ruby
+[lightstep-license]:              https://github.com/lightstep/lightstep-tracer-ruby/blob/master/LICENSE
