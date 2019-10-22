@@ -207,14 +207,14 @@ describe SplunkTracing do
       expect(child.context.trace_id).to be_an_instance_of String
       expect(child.context.trace_id).to eq(parent1.context.trace_id)
       expect(child.context.trace_id).not_to eq(parent2.context.trace_id)
-      expect(child.tags[:parent_span_guid]).to eq(parent1.context.id)
+      expect(child.context.parent_id).to eq(parent1.context.id)
     end
 
     children2.each do |child|
       expect(child.context.trace_id).to be_an_instance_of String
       expect(child.context.trace_id).to eq(parent2.context.trace_id)
       expect(child.context.trace_id).not_to eq(parent1.context.trace_id)
-      expect(child.tags[:parent_span_guid]).to eq(parent2.context.id)
+      expect(child.context.parent_id).to eq(parent2.context.id)
     end
 
     children1.each(&:finish)
@@ -224,7 +224,7 @@ describe SplunkTracing do
 
     (children1.concat children2).each do |child|
       thrift_data = child.to_h
-      expect(thrift_data[:trace_guid]).to eq(child.context.trace_id)
+      expect(thrift_data[:trace_id]).to eq(child.context.trace_id)
     end
   end
 
@@ -301,9 +301,9 @@ describe SplunkTracing do
     expect(result[:oldest_micros]).to be <= result[:youngest_micros]
 
     # Decompose back into a plain hash
-    runtime_attrs = Hash[result[:runtime][:attrs].map { |a|; [a[:Key], a[:Value]]; }]
-    expect(runtime_attrs).to include('splunktracing.tracer_platform', 'splunktracing.tracer_version')
-    expect(runtime_attrs).to include('splunktracing.tracer_platform_version')
+    runtime_attrs = result[:runtime]
+    expect(runtime_attrs).to include(:tracer_platform, :tracer_version)
+    expect(runtime_attrs).to include(:tracer_platform_version)
   end
 
   it 'should report that Span#log is deprecated' do
@@ -333,8 +333,8 @@ describe SplunkTracing do
       result[:span_records][0][:log_records][0][:fields]
     end
 
-    expect(reported_fields[:event]).to include({ Key: 'event', Value: 'test-event' })
-    expect(reported_fields[:key]).to include({ Key: 'key', Value: 'value' })
+    expect(reported_fields[:event]).to include({ event: 'test-event' })
+    expect(reported_fields[:key]).to include({ key: 'value' })
   end
 
   it 'should report payloads correctly' do
@@ -356,13 +356,9 @@ describe SplunkTracing do
     # NOTE: these comparisons rely on Ruby generating a consistent ordering to
     # map keys
 
-    expect(reported_fields.call({})).to eq(JSON.generate([]))
-    expect(reported_fields.call(x: 'y')).to eq(JSON.generate([{Key: 'x', Value: 'y'}]))
-    expect(reported_fields.call(x: 'y', a: 5, true: true)).to eq(JSON.generate([
-      {Key: 'x', Value: 'y'},
-      {Key: 'a', Value: '5'},
-      {Key: 'true', Value: 'true'}
-    ]))
+    expect(reported_fields.call({})).to eq(JSON.generate({}))
+    expect(reported_fields.call(x: 'y')).to eq(JSON.generate({x:'y'}))
+    expect(reported_fields.call(x: 'y', a: 5, true: true)).to eq(JSON.generate({x: 'y',a: 5,true: true}))
   end
 
   it 'should report user-specified tracer-level tags' do
@@ -371,9 +367,9 @@ describe SplunkTracing do
       component_name: 'splunktracing/ruby/spec',
       transport: SplunkTracing::Transport::Callback.new(callback: proc {|obj| result = obj }),
       tags: {
-        "user-provided-string" => "value",
-        "user-provided-number" => 12,
-        "user-provided-array" => []
+        "user_provided_string" => "value",
+        "user_provided_number" => 12,
+        "user_provided_array" => []
       }
     )
     s0 = tracer.start_span('s0')
@@ -382,9 +378,10 @@ describe SplunkTracing do
     tracer.flush
 
     expect(result).to include(:runtime, :span_records, :oldest_micros, :youngest_micros)
-    expect(result[:runtime][:attrs]).to include({Key: "user-provided-string", Value: "value"})
-    expect(result[:runtime][:attrs]).to include({Key: "user-provided-number", Value: "12"})
-    expect(result[:runtime][:attrs]).to include({Key: "user-provided-array", Value: "[]"})
+    runtime_attrs = result[:runtime][:attrs].to_h
+    expect(runtime_attrs).to include("user_provided_string" => "value")
+    expect(runtime_attrs).to include("user_provided_number" => 12)
+    expect(runtime_attrs).to include("user_provided_array" => [])
   end
 
   it 'should handle inject/join for text carriers' do
@@ -504,7 +501,7 @@ describe SplunkTracing do
 
     expect(result[:span_records].length).to eq(65)
     result[:span_records].each do |span|
-      expect(span[:log_records].length).to eq(10) unless span[:span_name] == "parent_span"
+      expect(span[:log_records].length).to eq(10) unless span[:operation_name] == "parent_span"
     end
 
   end
@@ -536,8 +533,8 @@ describe SplunkTracing do
       r = results[i]
       expect(r[:span_records].length).to eq(17)
       r[:span_records].each do |span|
-        expect(span[:log_records].length).to eq(10) unless span[:span_name] == "parent_span"
-        expect(span[:log_records].length).to eq(0) if span[:span_name] == "parent_span"
+        expect(span[:log_records].length).to eq(10) unless span[:operation_name] == "parent_span"
+        expect(span[:log_records].length).to eq(0) if span[:operation_name] == "parent_span"
       end
     end
   end
@@ -622,7 +619,7 @@ describe SplunkTracing do
     tracer.flush
 
     expect(result).to be_a(Hash)
-    expect(result[:span_records].first[:runtime_guid]).to eq(tracer.guid)
+    expect(result[:span_records].first[:guid]).to eq(tracer.guid)
   end
 
   it 'should convert span names to strings' do
@@ -632,8 +629,8 @@ describe SplunkTracing do
     tracer.start_span([:foo]).finish
     tracer.flush
     records = result[:span_records]
-    expect(records[0][:span_name]).to eq("5")
-    expect(records[1][:span_name]).to eq("[:foo]")
+    expect(records[0][:operation_name]).to eq("5")
+    expect(records[1][:operation_name]).to eq("[:foo]")
   end
 
   describe '#scope_manager' do
@@ -665,7 +662,7 @@ describe SplunkTracing do
 
       it 'should create a child_of reference to the active scope' do
         span = tracer.start_span('child-operation')
-        expect(span.tags[:parent_span_guid]).to eq(@parent_span.context.id)
+        expect(span.context.parent_id).to eq(@parent_span.context.id)
       end
 
       context 'when ignore_active_scope is true' do
@@ -685,7 +682,7 @@ describe SplunkTracing do
 
       actual = tracer.scope_manager.active
       expect(actual).to be_an_instance_of(SplunkTracing::Scope)
-      expect(actual.span.to_h[:span_name]).to eq('some-operation')
+      expect(actual.span.to_h[:operation_name]).to eq('some-operation')
     end
 
     it 'should yield the active scope when given a block' do
@@ -694,7 +691,7 @@ describe SplunkTracing do
 
         expected_scope = tracer.scope_manager.active
         expect(scope).to eq(expected_scope)
-        expect(scope.span.to_h[:span_name]).to eq('some-operation')
+        expect(scope.span.to_h[:operation_name]).to eq('some-operation')
       end
     end
 
@@ -730,14 +727,14 @@ describe SplunkTracing do
       let(:scope) { tracer.start_active_span('child-operation') }
 
       it 'should create a child_of reference to the active scope' do
-        expect(scope.span.tags[:parent_span_guid]).to eq(parent_span.context.id)
+        expect(scope.span.context.parent_id).to eq(parent_span.context.id)
       end
 
       context 'when ignore_active_scope is true' do
         let(:scope) { tracer.start_active_span('child-operation', ignore_active_scope: true) }
 
         it 'should not create a child_of reference to the active scope', focus: true do
-          expect(scope.span.tags[:parent_span_guid]).not_to eq(parent_span.context.id)
+          expect(scope.span.context.parent_id).not_to eq(parent_span.context.id)
         end
       end
     end
@@ -762,7 +759,7 @@ describe SplunkTracing do
       end
 
       it 'should return the active span' do
-        expect(tracer.active_span.to_h[:span_name]).to eq('some-operation')
+        expect(tracer.active_span.to_h[:operation_name]).to eq('some-operation')
       end
     end
   end

@@ -7,17 +7,17 @@ Gem::Specification.new do |spec|
   spec.name          = 'splunk-tracer'
   spec.version       = SplunkTracing::VERSION
   spec.authors       = ['splunk']
-  spec.email         = ['support@splunk.com']
+  spec.email         = ['gburgett@splunk.com']
 
   spec.summary       = 'Splunk OpenTracing Ruby bindings'
-  spec.homepage      = 'https://github.com/splunk/splunk-tracer-ruby'
+  spec.homepage      = 'https://github.com/splnkit/splunk-tracer-ruby'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   spec.require_paths = ['lib']
 
   spec.metadata    = {
-    "changelog_uri" => "https://github.com/splunk/splunk-tracer-ruby/blob/master/CHANGELOG.md",
+    "changelog_uri" => "https://github.com/splnkit/splunk-tracer-ruby/blob/master/CHANGELOG.md",
   }
 
   spec.add_dependency 'concurrent-ruby', '~> 1.0'

@@ -6,7 +6,7 @@ require 'splunktracing'
 
 SplunkTracing.configure(
   component_name: 'splunktracing/ruby/examples/fork_children',
-  access_token: '08243c00-a31b-499d-9fae-776b41990997' # '{your_access_token}'
+  access_token: '{your_access_token}'
 )
 
 puts 'Starting...'

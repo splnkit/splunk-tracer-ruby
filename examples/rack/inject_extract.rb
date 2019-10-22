@@ -5,7 +5,7 @@ require 'opentracing'
 require 'rack'
 require 'rack/server'
 
-$token = '08243c00-a31b-499d-9fae-776b41990997' # '{your_access_token}'
+$token = '{your_access_token}'
 $request_id = 'abc123'
 
 class Router
@@ -26,7 +26,7 @@ class Router
     span.log(event: "application_response", response: res.to_s)
     span.finish
     @tracer.flush
-    puts "----> https://app.splunktracing.com/#{$token}/trace?span_guid=#{span.span_context.id}&at_micros=#{span.start_micros} <----"
+    puts "----> #{$token} span_guid=#{span.span_context.id} at_micros=#{span.start_micros} <----"
     [200, {}, [res.body]]
   end
 end

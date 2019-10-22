@@ -106,9 +106,6 @@ module SplunkTracing
             span_hash = {:time => span[:timestamp], :sourcetype => "splunktracing:span" }
             span_contents = span.merge(runtime_hash)
             log_array = span_contents.delete(:log_records)
-            file = File.open("/Users/gburgett/Downloads/woah.txt", "w")
-            file.puts log_array.to_json
-            file.close
             runtime_attrs = span_contents.delete(:attrs)
             span_contents[:tags].merge(runtime_attrs)
             span_hash["event"] = span_contents

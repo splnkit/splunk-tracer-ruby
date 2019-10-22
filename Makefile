@@ -21,4 +21,4 @@ bump-version:
 	git push --tags
 
 publish: build test benchmark bump-version
-	gem push splunktracing-`ruby scripts/version.rb`.gem
+	gem push splunk-tracer-`ruby scripts/version.rb`.gem
